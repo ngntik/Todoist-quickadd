@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>ポチっと登録</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="titles">
+      <h1>ポチっと登録</h1>
+      <p>よくあるタスクをワンタップでTodoistへ</p>
+    </div>
+    <button id="gear-btn" aria-label="設定">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+    </button>
+  </header>
+
+  <div id="tabs"></div>
+
+  <main>
+    <div id="status-banner"></div>
+    <div id="task-list"></div>
+    <div id="empty-state">このタブにはまだタスクがありません。<br>下のボタンから登録してください。</div>
+    <button id="add-task-btn">＋ このタブにタスクを追加</button>
+  </main>
+
+  <div id="toast"></div>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal-sheet">
+    <h2>設定</h2>
+    <p class="sub">Todoistと連携するためのAPIトークンを登録します。</p>
+    <div class="field">
+      <label for="token-input">Todoist APIトークン</label>
+      <input type="password" id="token-input" placeholder="トークンを貼り付け">
+      <p class="hint">Todoistアプリ → 設定 → 連携機能（Integrations）の一番下にある「APIトークン」からコピーできます。この端末にのみ保存されます。</p>
+    </div>
+    <div class="field">
+      <label for="project-select">追加先プロジェクト（既定）</label>
+      <select id="project-select">
+        <option value="">Inbox（受信箱）</option>
+      </select>
+      <p class="hint">個別のタスクでプロジェクトを指定していない場合、ここで選んだ場所に追加されます。</p>
+    </div>
+    <div class="field">
+      <label>データのバックアップ</label>
+      <div class="modal-actions" style="margin-top:0;">
+        <button class="btn btn-secondary" id="export-btn" type="button">エクスポート</button>
+        <button class="btn btn-secondary" id="import-btn" type="button">インポート</button>
+      </div>
+      <input type="file" id="import-file-input" accept="application/json" style="display:none;">
+      <p class="hint">タブとタスクの一覧をJSONファイルとして書き出し・読み込みできます。機種変更やブラウザの乗り換え時にご利用ください。APIトークンはセキュリティのためファイルには含まれません。</p>
+    </div>
+    <div id="settings-status" class="status-line"></div>
+    <div class="modal-actions" style="margin-top:14px;">
+      <button class="btn btn-secondary" id="settings-cancel">閉じる</button>
+      <button class="btn btn-primary" id="settings-save">保存して接続確認</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Task Modal -->
+<div class="modal-overlay" id="task-modal">
+  <div class="modal-sheet">
+    <h2>タスクを登録</h2>
+    <p class="sub" id="task-modal-tab-label"></p>
+    <div class="field">
+      <label for="task-name-input">タスク名</label>
+      <input type="text" id="task-name-input" placeholder="例：トイレットペーパー">
+    </div>
+    <div class="field">
+      <label>アイコン</label>
+      <div class="emoji-picker" id="emoji-picker"></div>
+    </div>
+    <div class="field">
+      <label for="task-project-select">追加先プロジェクト</label>
+      <select id="task-project-select">
+        <option value="">既定の設定に従う</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>期限</label>
+      <div class="due-presets" id="due-presets"></div>
+      <input type="text" id="task-due-input" placeholder="自然文で入力もできます（例：毎週月曜）">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="task-cancel">キャンセル</button>
+      <button class="btn btn-primary" id="task-save">保存</button>
+    </div>
+    <button class="btn-danger-text" id="task-delete" style="display:none;">このタスクを削除する</button>
+  </div>
+</div>
+
+<!-- Add/Edit Tab Modal -->
+<div class="modal-overlay" id="tab-modal">
+  <div class="modal-sheet">
+    <h2 id="tab-modal-title">タブを追加</h2>
+    <p class="sub">タスクの種類（タブ）を自由に作成できます。</p>
+    <div class="field">
+      <label for="tab-name-input">タブ名</label>
+      <input type="text" id="tab-name-input" placeholder="例：ペット用品">
+    </div>
+    <div class="field">
+      <label>色</label>
+      <div class="color-picker" id="tab-color-picker"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="tab-cancel">キャンセル</button>
+      <button class="btn btn-primary" id="tab-save">保存</button>
+    </div>
+    <button class="btn-danger-text" id="tab-delete" style="display:none;">このタブを削除する</button>
+  </div>
+</div>
+<script src="app.js" defer></script>
+</body>
+</html>
